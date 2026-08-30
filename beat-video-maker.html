@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Beat Video Maker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+  --stage:#15151d;
+  --panel:#1e1e29;
+  --panel-hi:#2a2a38;
+  --brick-red:#e8433d;
+  --brick-yellow:#ffc629;
+  --brick-blue:#1a7bc7;
+  --brick-green:#1fae63;
+  --ink:#f4f2ea;
+  --ink-dim:#9c9ba8;
+  --focus:#ffc629;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--stage);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px 14px 40px;
+}
+h1{
+  font-family:'Baloo 2',sans-serif;
+  font-weight:800;
+  font-size:clamp(28px,5vw,42px);
+  margin:4px 0 2px;
+  letter-spacing:0.5px;
+  background:linear-gradient(90deg,var(--brick-red),var(--brick-yellow) 45%,var(--brick-blue) 85%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.tagline{
+  color:var(--ink-dim);
+  font-size:14px;
+  margin-bottom:20px;
+  text-align:center;
+  max-width:520px;
+}
+.iframe-note{
+  background:#2a2213;
+  border:1px solid var(--brick-yellow);
+  color:#ffe9a8;
+  font-size:12.5px;
+  padding:8px 12px;
+  border-radius:10px;
+  max-width:460px;
+  text-align:center;
+  margin-bottom:14px;
+  display:none;
+}
+.iframe-note.show{display:block;}
+.app{
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  justify-content:center;
+  width:100%;
+  max-width:1080px;
+}
+.stage-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+}
+.stage-frame{
+  position:relative;
+  border-radius:18px;
+  padding:8px;
+  background:var(--panel);
+  box-shadow:0 0 0 3px #000 inset, 0 8px 24px rgba(0,0,0,.4);
+  transition:box-shadow .15s ease;
+}
+.stage-frame.beat-glow{
+  box-shadow:0 0 0 3px #000 inset, 0 0 0 4px var(--glow-color,var(--brick-yellow)), 0 0 26px 4px var(--glow-color,var(--brick-yellow));
+}
+.studs{
+  position:absolute;
+  top:-11px; left:16px; right:16px;
+  display:flex;
+  justify-content:space-between;
+  pointer-events:none;
+}
+.studs span{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--panel-hi);
+  box-shadow:0 2px 0 rgba(0,0,0,.35) inset, 0 -2px 0 rgba(255,255,255,.05) inset;
+}
+canvas{
+  display:block;
+  border-radius:12px;
+  background:#000;
+  cursor:grab;
+  touch-action:none;
+}
+.cam-overlay{
+  position:absolute;
+  top:8px;left:8px;right:8px;bottom:8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  text-align:center;
+  padding:16px;
+  pointer-events:none;
+}
+.cam-overlay.active{pointer-events:auto;}
+.cam-overlay p{
+  color:var(--ink-dim);
+  font-size:13px;
+  max-width:320px;
+  margin:0;
+}
+.cam-overlay p.err{color:#ffb0a8;}
+.enable-btn{
+  background:var(--brick-blue);
+  padding:12px 22px;
+  border-radius:14px;
+  font-size:15px;
+  box-shadow:0 4px 0 #0f4a75;
+}
+.enable-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #0f4a75;}
+.transport{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+button{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  border:none;
+  cursor:pointer;
+  color:var(--ink);
+}
+button:focus-visible, .tab:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+.rec-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--brick-red);
+  padding:12px 22px;
+  border-radius:14px;
+  font-size:15px;
+  box-shadow:0 4px 0 #9c1f1c;
+}
+.rec-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #9c1f1c;}
+.rec-btn .dot{
+  width:12px;height:12px;border-radius:50%;
+  background:#fff;
+}
+.rec-btn.recording .dot{
+  animation:pulse 1s infinite;
+  background:#fff;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.timer{
+  font-variant-numeric:tabular-nums;
+  font-family:'Baloo 2',sans-serif;
+  font-size:20px;
+  color:var(--brick-yellow);
+  min-width:48px;
+  text-align:center;
+}
+.clear-btn, .scan-btn{
+  background:var(--panel-hi);
+  padding:10px 16px;
+  border-radius:12px;
+  font-size:13px;
+  color:var(--ink-dim);
+}
+.scan-btn.on{background:var(--brick-green);color:#0c2318;}
+.clear-btn.on{background:var(--brick-yellow);color:#1a1a1a;}
+.side{
+  width:290px;
+  background:var(--panel);
+  border-radius:16px;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  max-width:100%;
+}
+.tabs{
+  display:flex;
+  gap:6px;
+}
+.tab{
+  flex:1;
+  background:var(--panel-hi);
+  border-radius:10px;
+  padding:9px 4px;
+  font-size:12.5px;
+  color:var(--ink-dim);
+  text-align:center;
+}
+.tab.active{
+  background:var(--brick-yellow);
+  color:#1a1a1a;
+}
+.panel-body{min-height:210px;}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.sticker-btn{
+  background:var(--panel-hi);
+  border-radius:10px;
+  font-size:22px;
+  padding:10px 0;
+  line-height:1;
+}
+.sticker-btn:hover{background:var(--brick-blue);}
+.filter-list, .beat-list, .chip-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.opt-btn{
+  background:var(--panel-hi);
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:13.5px;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.opt-btn.active{
+  background:var(--brick-green);
+  color:#0c2318;
+}
+.opt-btn .swatch{
+  width:14px;height:14px;border-radius:4px;
+  flex-shrink:0;
+}
+.hint{
+  font-size:11.5px;
+  color:var(--ink-dim);
+  line-height:1.5;
+}
+.chip-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--panel-hi);
+  border-radius:10px;
+  padding:8px 10px;
+  font-size:12.5px;
+}
+.chip-row .swatch{width:16px;height:16px;border-radius:5px;flex-shrink:0;}
+.result{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin-top:6px;
+}
+.result.show{display:flex;}
+.result video{
+  max-width:100%;
+  border-radius:12px;
+  border:3px solid var(--brick-yellow);
+}
+.dl-btn{
+  background:var(--brick-green);
+  padding:10px 20px;
+  border-radius:12px;
+  font-size:14px;
+  text-decoration:none;
+  color:#0c2318;
+  box-shadow:0 4px 0 #0f7a3f;
+}
+@media (max-width:720px){
+  .side{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<h1>Beat Video Maker</h1>
+<div class="tagline">Webcam + stickers + beats — and now a chip scanner: hold up a colored brick to change the scene.</div>
+<div class="iframe-note" id="iframeNote">Heads up: if the camera won't turn on inside this chat preview, download the file and open it directly in a browser tab — embedded previews often block camera access.</div>
+
+<div class="app">
+  <div class="stage-col">
+    <div class="stage-frame" id="stageFrame">
+      <div class="studs" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <canvas id="stage" width="480" height="360"></canvas>
+      <div class="cam-overlay active" id="camOverlay">
+        <p id="camText">Turn on your camera to start.</p>
+        <button class="enable-btn" id="enableBtn">Enable Camera</button>
+      </div>
+    </div>
+
+    <div class="transport">
+      <button class="rec-btn" id="recBtn"><span class="dot"></span><span id="recLabel">Record</span></button>
+      <div class="timer" id="timer">0:15</div>
+      <button class="scan-btn on" id="scanBtn">Chip Scanner: On</button>
+      <button class="clear-btn" id="pauseBtn">Pause Beat</button>
+      <button class="clear-btn" id="clearBtn">Clear stickers</button>
+    </div>
+
+    <div class="result" id="result">
+      <video id="playback" controls playsinline></video>
+      <a class="dl-btn" id="dlBtn" download="beat-video.webm">Download video</a>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="tabs">
+      <button class="tab active" data-tab="stickers">Stickers</button>
+      <button class="tab" data-tab="filters">Filters</button>
+      <button class="tab" data-tab="beats">Beats</button>
+      <button class="tab" data-tab="chips">Chips</button>
+    </div>
+
+    <div class="panel-body">
+      <div class="tab-panel" id="panel-stickers">
+        <div class="grid" id="stickerGrid"></div>
+        <div class="hint">Tap a sticker to drop it on the stage. Drag to move it, double-tap to remove it.</div>
+      </div>
+
+      <div class="tab-panel" id="panel-filters" style="display:none">
+        <div class="filter-list" id="filterList"></div>
+      </div>
+
+      <div class="tab-panel" id="panel-beats" style="display:none">
+        <div class="beat-list" id="beatList"></div>
+        <div class="hint">Beats play live and get baked into your recording.</div>
+      </div>
+
+      <div class="tab-panel" id="panel-chips" style="display:none">
+        <div class="chip-list" id="chipList"></div>
+        <div class="hint">10 colors, 10 reactions — including black and white now. Hold a solid-colored object (a LEGO brick works well) inside the circle at the bottom of the stage and keep it steady for under a second.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d', { willReadFrequently:true });
+  const stageFrame = document.getElementById('stageFrame');
+  const camOverlay = document.getElementById('camOverlay');
+  const camText = document.getElementById('camText');
+  const enableBtn = document.getElementById('enableBtn');
+  const iframeNote = document.getElementById('iframeNote');
+  const W = canvas.width, H = canvas.height;
+
+  if (window.self !== window.top) iframeNote.classList.add('show');
+
+  // ---------- Camera ----------
+  const video = document.createElement('video');
+  video.autoplay = true; video.muted = true; video.playsInline = true;
+  // Some browsers (notably Safari/iOS) won't reliably decode frames for a
+  // <video> that's never attached to the document, even if hidden. Keep it
+  // in the layout (not display:none) but visually and interactively invisible.
+  video.style.position = 'fixed';
+  video.style.top = '-9999px';
+  video.style.left = '-9999px';
+  video.style.width = '2px';
+  video.style.height = '2px';
+  video.style.opacity = '0';
+  video.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(video);
+  let hasCamera = false;
+
+  function describeError(err){
+    switch(err.name){
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        return "Camera permission was denied. Check your browser's site settings to allow camera access, then try again.";
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return 'No camera was found on this device.';
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return 'Your camera seems to be in use by another app. Close it there and try again.';
+      case 'SecurityError':
+        return "Camera access isn't allowed in this context. If this is an embedded preview, open the file directly in a browser tab instead.";
+      default:
+        return 'Could not access the camera (' + (err.message || err.name || 'unknown error') + ').';
+    }
+  }
+
+  function enableCamera(){
+    camText.textContent = 'Requesting camera…';
+    enableBtn.disabled = true;
+    navigator.mediaDevices?.getUserMedia({ video:{ width:W, height:H }, audio:false })
+      .then(stream => {
+        video.srcObject = stream;
+        return video.play().catch(() => {}); // some browsers need an explicit play()
+      })
+      .then(() => {
+        hasCamera = true;
+        camOverlay.classList.remove('active');
+        camOverlay.style.display = 'none';
+      })
+      .catch(err => {
+        hasCamera = false;
+        enableBtn.disabled = false;
+        camText.textContent = describeError(err);
+        camText.classList.add('err');
+      });
+  }
+  enableBtn.addEventListener('click', enableCamera);
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    camText.textContent = "This browser doesn't support camera access here.";
+    camText.classList.add('err');
+    enableBtn.disabled = true;
+  }
+
+  // ---------- Stickers ----------
+  const STICKERS = ['😎','👑','🎤','⭐','💥','🎸','🎧','✨','🕶️','🔥','🎩','💫'];
+  const stickerGrid = document.getElementById('stickerGrid');
+  STICKERS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'sticker-btn';
+    b.textContent = s;
+    b.setAttribute('aria-label','Add ' + s + ' sticker');
+    b.addEventListener('click', () => addSticker(s));
+    stickerGrid.appendChild(b);
+  });
+
+  let stickers = [];
+  function addSticker(emoji, x, y){
+    stickers.push({
+      emoji,
+      x: x !== undefined ? x : W/2 + (Math.random()*60-30),
+      y: y !== undefined ? y : H/2 + (Math.random()*60-30),
+      size: 56
+    });
+  }
+  function stickerBurst(emojis){
+    emojis.forEach((e,i) => {
+      const angle = (i/emojis.length) * Math.PI*2;
+      addSticker(e, W/2 + Math.cos(angle)*90, H/2 - 30 + Math.sin(angle)*60);
+    });
+  }
+  document.getElementById('clearBtn').addEventListener('click', () => { stickers = []; });
+
+  // dragging
+  let dragIndex = -1, dragOffsetX = 0, dragOffsetY = 0, lastTapTime = 0, lastTapIndex = -1;
+  function canvasPoint(evt){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (evt.touches ? evt.touches[0].clientX : evt.clientX) - rect.left;
+    const cy = (evt.touches ? evt.touches[0].clientY : evt.clientY) - rect.top;
+    return { x: cx * (W/rect.width), y: cy * (H/rect.height) };
+  }
+  function hitTest(pt){
+    for (let i = stickers.length - 1; i >= 0; i--){
+      const s = stickers[i];
+      const half = s.size/2;
+      if (Math.abs(pt.x - s.x) < half && Math.abs(pt.y - s.y) < half) return i;
+    }
+    return -1;
+  }
+  function pointerDown(evt){
+    const pt = canvasPoint(evt);
+    const idx = hitTest(pt);
+    if (idx >= 0){
+      dragIndex = idx;
+      dragOffsetX = pt.x - stickers[idx].x;
+      dragOffsetY = pt.y - stickers[idx].y;
+      const now = Date.now();
+      if (lastTapIndex === idx && now - lastTapTime < 350){
+        stickers.splice(idx,1);
+        dragIndex = -1;
+      }
+      lastTapTime = now; lastTapIndex = idx;
+      evt.preventDefault();
+    }
+  }
+  function pointerMove(evt){
+    if (dragIndex < 0) return;
+    const pt = canvasPoint(evt);
+    stickers[dragIndex].x = pt.x - dragOffsetX;
+    stickers[dragIndex].y = pt.y - dragOffsetY;
+    evt.preventDefault();
+  }
+  function pointerUp(){ dragIndex = -1; }
+  canvas.addEventListener('mousedown', pointerDown);
+  canvas.addEventListener('mousemove', pointerMove);
+  window.addEventListener('mouseup', pointerUp);
+  canvas.addEventListener('touchstart', pointerDown, { passive:false });
+  canvas.addEventListener('touchmove', pointerMove, { passive:false });
+  canvas.addEventListener('touchend', pointerUp);
+
+  // ---------- Filters ----------
+  const FILTERS = [
+    { id:'none',   label:'Natural',       color:'#9c9ba8', apply:null },
+    { id:'neon',   label:'Neon Glow',     color:'#ff2fd0', apply:'brightness(1.15) saturate(2.1) contrast(1.1) hue-rotate(-8deg)' },
+    { id:'vhs',    label:'Retro VHS',     color:'#ffc629', apply:'contrast(1.2) saturate(1.4) sepia(0.15)' },
+    { id:'bw',     label:'Black & White', color:'#ffffff', apply:'grayscale(1) contrast(1.15)' },
+    { id:'comic',  label:'Comic Pop',     color:'#1fae63', apply:'saturate(2.3) contrast(1.35)' },
+    { id:'sunset', label:'Sunset Warm',   color:'#ff8a2b', apply:'saturate(1.6) contrast(1.1) sepia(0.25) hue-rotate(-10deg)' },
+    { id:'ice',    label:'Ice Cool',      color:'#22c3c3', apply:'saturate(1.5) contrast(1.05) hue-rotate(150deg) brightness(1.05)' },
+    { id:'haze',   label:'Purple Haze',   color:'#8a3fe0', apply:'saturate(1.8) hue-rotate(250deg) brightness(0.95)' },
+  ];
+  let currentFilter = FILTERS[0];
+  const filterList = document.getElementById('filterList');
+  const filterButtons = [];
+  function selectFilter(f, btnEl){
+    currentFilter = f;
+    filterButtons.forEach(c => c.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+  FILTERS.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn' + (f.id==='none' ? ' active' : '');
+    b.innerHTML = '<span class="swatch" style="background:'+f.color+'"></span>' + f.label;
+    b.addEventListener('click', () => selectFilter(f, b));
+    filterList.appendChild(b);
+    filterButtons.push(b);
+  });
+
+  // ---------- Beats (Web Audio synth, no external files) ----------
+  let audioCtx = null, destNode = null, beatTimer = null, beatStep = 0, currentBeat = null;
+  function ensureAudio(){
+    if (!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      destNode = audioCtx.createMediaStreamDestination();
+    }
+  }
+  function blip(freq, time, dur, type, gainVal){
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(gainVal, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    g.connect(destNode);
+    osc.start(time); osc.stop(time + dur + 0.02);
+  }
+  function noiseHit(time, dur, gainVal){
+    const bufferSize = audioCtx.sampleRate * dur;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1) * (1 - i/bufferSize);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(gainVal, time);
+    src.connect(g); g.connect(audioCtx.destination); g.connect(destNode);
+    src.start(time);
+  }
+  function zap(time, freqStart, freqEnd, dur, gainVal){
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freqStart, time);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd,20), time + dur);
+    g.gain.setValueAtTime(gainVal, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    osc.connect(g); g.connect(audioCtx.destination); g.connect(destNode);
+    osc.start(time); osc.stop(time + dur + 0.02);
+  }
+
+  const BEATS = [
+    { id:'brick', label:'Brick Pop', color:'#e8433d', bpm:100,
+      pattern:(t,step)=>{ if(step%4===0) blip(90,t,0.28,'sine',0.9); if(step%4===2) noiseHit(t,0.12,0.5); if(step%2===1) blip(1600,t,0.04,'square',0.15); } },
+    { id:'neon', label:'Neon Groove', color:'#ff2fd0', bpm:118,
+      pattern:(t,step)=>{ if(step%4===0) blip(70,t,0.22,'sine',0.85); if(step%8===4) noiseHit(t,0.1,0.4); blip(440+ (step%4)*40,t,0.05,'sawtooth',0.06); } },
+    { id:'retro', label:'Retro Wave', color:'#ffc629', bpm:90,
+      pattern:(t,step)=>{ if(step%4===0) blip(80,t,0.3,'triangle',0.8); if(step%4===2) noiseHit(t,0.14,0.45); if(step%2===0) blip(220,t,0.15,'square',0.12); } },
+    { id:'laser', label:'Laser Zap', color:'#22c3c3', bpm:132,
+      pattern:(t,step)=>{ if(step%4===0) blip(85,t,0.2,'sine',0.85); if(step%2===0) zap(t,900,220,0.12,0.16); if(step%4===2) noiseHit(t,0.08,0.3); } },
+    { id:'jungle', label:'Jungle Break', color:'#1a7bc7', bpm:145,
+      pattern:(t,step)=>{ const s=step%8; if([0,3,5].includes(s)) blip(75,t,0.16,'sine',0.8); if([2,6].includes(s)) noiseHit(t,0.1,0.5); blip(2200,t,0.02,'square',0.05); } },
+  ];
+  const beatList = document.getElementById('beatList');
+  const beatButtons = [];
+  let beatPaused = false;
+  let lastTickTime = 0, currentStepMs = 0;
+
+  function beatTick(bt){
+    lastTickTime = Date.now();
+    const t = audioCtx.currentTime + 0.02;
+    bt.pattern(t, beatStep);
+    const stepMs = (60000 / bt.bpm) / 2;
+    if (beatStep % 2 === 0){
+      stageFrame.classList.add('beat-glow');
+      setTimeout(()=> stageFrame.classList.remove('beat-glow'), stepMs*0.6);
+    }
+    beatStep++;
+  }
+  function stopBeat(){
+    // Fully stops and forgets the current beat (used when switching/silencing via chips).
+    if (beatTimer) clearInterval(beatTimer);
+    beatTimer = null; currentBeat = null; beatStep = 0; beatPaused = false;
+    stageFrame.classList.remove('beat-glow');
+    beatButtons.forEach(c => c.classList.remove('active'));
+    updatePauseBtn();
+  }
+  function startBeat(bt, btnEl){
+    ensureAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    stopBeat();
+    currentBeat = bt;
+    beatPaused = false;
+    beatButtons.forEach(c => c.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    stageFrame.style.setProperty('--glow-color', bt.color);
+    beatStep = 0;
+    const stepMs = (60000 / bt.bpm) / 2;
+    currentStepMs = stepMs;
+    lastTickTime = Date.now();
+    beatTimer = setInterval(() => beatTick(bt), stepMs);
+    updatePauseBtn();
+  }
+  function pauseBeat(){
+    // Pauses playback in place, keeping currentBeat and beatStep so Resume
+    // continues the same pattern rather than restarting it.
+    if (!currentBeat || beatPaused) return;
+    if (beatTimer) clearInterval(beatTimer);
+    beatTimer = null;
+    beatPaused = true;
+    stageFrame.classList.remove('beat-glow');
+    updatePauseBtn();
+  }
+  function resumeBeat(){
+    if (!currentBeat || !beatPaused) return;
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    beatPaused = false;
+    const stepMs = (60000 / currentBeat.bpm) / 2;
+    currentStepMs = stepMs;
+    lastTickTime = Date.now();
+    beatTimer = setInterval(() => beatTick(currentBeat), stepMs);
+    updatePauseBtn();
+  }
+  const pauseBtn = document.getElementById('pauseBtn');
+  function updatePauseBtn(){
+    if (!currentBeat){
+      pauseBtn.textContent = 'Pause Beat';
+      pauseBtn.classList.remove('on');
+    } else if (beatPaused){
+      pauseBtn.textContent = 'Resume Beat';
+      pauseBtn.classList.add('on');
+    } else {
+      pauseBtn.textContent = 'Pause Beat';
+      pauseBtn.classList.remove('on');
+    }
+  }
+  pauseBtn.addEventListener('click', () => {
+    if (!currentBeat) return; // nothing playing to pause
+    beatPaused ? resumeBeat() : pauseBeat();
+  });
+  function toggleBeat(bt, btnEl){
+    if (currentBeat && currentBeat.id === bt.id){ stopBeat(); return; }
+    startBeat(bt, btnEl);
+  }
+  BEATS.forEach(bt => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn';
+    b.innerHTML = '<span class="swatch" style="background:'+bt.color+'"></span>' + bt.label;
+    b.addEventListener('click', () => toggleBeat(bt, b));
+    beatList.appendChild(b);
+    beatButtons.push(b);
+  });
+
+  // ---------- Tabs ----------
+  const tabs = document.querySelectorAll('.tab');
+  const panels = {
+    stickers: document.getElementById('panel-stickers'),
+    filters: document.getElementById('panel-filters'),
+    beats: document.getElementById('panel-beats'),
+    chips: document.getElementById('panel-chips')
+  };
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    Object.keys(panels).forEach(k => panels[k].style.display = (k===t.dataset.tab) ? 'block' : 'none');
+  }));
+
+  // ---------- Music Chips (color-marker scanner) ----------
+  // Real BeatBits use printed artwork we don't have samples of, so this reacts to
+  // solid color instead — hold up a colored object (a LEGO brick works well).
+  // Palette pulled from the actual card backgrounds in the uploaded BeatBit sheets:
+  // black, white/cream, red, orange, yellow, green, teal, blue, purple, and pink.
+  const EFFECT_ICONS = { lightning:'⚡', burst:'💥', sparkle:'✨', confetti:'🎊', bubbles:'🫧', rainbow:'🌈', hearts:'💗' };
+  const CHIPS = [
+    { id:'red',    label:'Red Chip',    color:'#e8433d', beatIdx:0,  filterIdx:4, effect:'lightning', stickers:['🔥','💥','🎸'] },
+    { id:'orange', label:'Orange Chip', color:'#ff8a2b', beatIdx:2,  filterIdx:5, effect:'burst',     stickers:['🎺','🧡','🔥'] },
+    { id:'yellow', label:'Yellow Chip', color:'#ffc629', beatIdx:1,  filterIdx:2, effect:'sparkle',   stickers:['✨','⭐','🎩'] },
+    { id:'green',  label:'Green Chip',  color:'#1fae63', beatIdx:4,  filterIdx:4, effect:'burst',     stickers:['🌿','🐍','🎷'] },
+    { id:'cyan',   label:'Teal Chip',   color:'#22c3c3', beatIdx:3,  filterIdx:6, effect:'bubbles',   stickers:['💧','❄️','🎧'] },
+    { id:'blue',   label:'Blue Chip',   color:'#1a7bc7', beatIdx:0,  filterIdx:1, effect:'lightning', stickers:['💫','🌊','🕶️'] },
+    { id:'purple', label:'Purple Chip', color:'#8a3fe0', beatIdx:3,  filterIdx:7, effect:'sparkle',   stickers:['🔮','🌌','🎻'] },
+    { id:'pink',   label:'Pink Chip',   color:'#ff2fd0', beatIdx:1,  filterIdx:5, effect:'hearts',    stickers:['💖','🎤','✨'] },
+    { id:'black',  label:'Black Chip',  color:'#2a2a32', beatIdx:0,  filterIdx:3, effect:'lightning', stickers:['🎩','🖤','✨'] },
+    { id:'white',  label:'White Chip',  color:'#f4f2ea', beatIdx:-1, filterIdx:0, effect:'rainbow',   stickers:['❄️','🕊️','✨'] },
+  ];
+  const chipList = document.getElementById('chipList');
+  CHIPS.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'chip-row';
+    const beatName = c.beatIdx >= 0 ? BEATS[c.beatIdx].label : 'Silence';
+    row.innerHTML = '<span class="swatch" style="background:'+c.color+'"></span>' +
+      '<span>' + c.label + ' → ' + FILTERS[c.filterIdx].label + ' + ' + beatName + ' ' + EFFECT_ICONS[c.effect] + '</span>';
+    chipList.appendChild(row);
+  });
+
+  let scannerOn = true;
+  const scanBtn = document.getElementById('scanBtn');
+  scanBtn.addEventListener('click', () => {
+    scannerOn = !scannerOn;
+    scanBtn.classList.toggle('on', scannerOn);
+    scanBtn.textContent = 'Chip Scanner: ' + (scannerOn ? 'On' : 'Off');
+    if (!scannerOn){ holdColor = null; holdCount = 0; }
+  });
+
+  const zoneX = W/2, zoneY = H - 56, zoneR = 42;
+  const scanCanvas = document.createElement('canvas');
+  scanCanvas.width = 16; scanCanvas.height = 16;
+  const scanCtx = scanCanvas.getContext('2d', { willReadFrequently:true });
+
+  function rgbToHsv(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min;
+    let h = 0;
+    if (d !== 0){
+      if (max === r) h = ((g-b)/d) % 6;
+      else if (max === g) h = (b-r)/d + 2;
+      else h = (r-g)/d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const s = max === 0 ? 0 : d/max;
+    return { h, s, v:max };
+  }
+  function classifyColor(r,g,b){
+    const { h, s, v } = rgbToHsv(r,g,b);
+    if (v < 0.14) return 'black';               // very dark, regardless of hue
+    if (v > 0.86 && s < 0.18) return 'white';    // bright and washed out (not a shadow)
+    if (s < 0.32 || v > 0.98) return null;       // ambiguous mid-gray or blown-out highlight
+    if (h >= 345 || h < 15) return 'red';
+    if (h < 40)  return 'orange';
+    if (h < 68)  return 'yellow';
+    if (h < 160) return 'green';
+    if (h < 195) return 'cyan';
+    if (h < 250) return 'blue';
+    if (h < 290) return 'purple';
+    return 'pink';
+  }
+
+  function sampleChipZone(){
+    if (!hasCamera || video.readyState < 2) return null;
+    const size = 60;
+    try{
+      scanCtx.drawImage(video, zoneX - size/2, zoneY - size/2, size, size, 0, 0, scanCanvas.width, scanCanvas.height);
+      const data = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height).data;
+      let r=0,g=0,b=0,n=0;
+      for (let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; n++; }
+      return { r:r/n, g:g/n, b:b/n };
+    } catch(e){ return null; }
+  }
+
+  let holdColor = null, holdCount = 0;
+  const HOLD_THRESHOLD = 3; // ~0.36s at 120ms interval
+  let chipMessage = '', chipMessageUntil = 0;
+
+  // ---------- Chip effects (lightning, bursts, etc. — the "AR effect" moment) ----------
+  const EFFECT_DURATIONS = { lightning:450, burst:600, sparkle:900, confetti:1300, bubbles:1300, rainbow:1000, hearts:1200 };
+  let effects = [];
+  function spawnEffect(type, color){
+    effects.push({ type, color, start: Date.now(), duration: EFFECT_DURATIONS[type] || 700, seed: Math.random()*1000 });
+  }
+  function drawLightning(e,t){
+    ctx.save();
+    const flashAlpha = Math.max(0, 0.35*(1-t*2));
+    if (flashAlpha > 0){ ctx.fillStyle = 'rgba(255,255,255,'+flashAlpha.toFixed(3)+')'; ctx.fillRect(0,0,W,H); }
+    ctx.globalAlpha = Math.max(0, 1-t);
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = 3;
+    for (let b=0;b<2;b++){
+      let x = W*0.25 + b*W*0.5 + Math.sin(e.seed+b)*20, y=0;
+      ctx.beginPath(); ctx.moveTo(x,y);
+      for (let s=1;s<=6;s++){
+        y = H*(s/6);
+        x += Math.sin(e.seed*3+s*2+b)*18;
+        ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawBurst(e,t){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,1-t);
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = 4;
+    const cx=W/2, cy=H/2-20, rays=10, len=30+t*90;
+    for (let i=0;i<rays;i++){
+      const ang = (i/rays)*Math.PI*2 + e.seed;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(ang)*len*0.4, cy+Math.sin(ang)*len*0.4);
+      ctx.lineTo(cx+Math.cos(ang)*len, cy+Math.sin(ang)*len);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawSparkleShower(e,t){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,1-t);
+    ctx.fillStyle = e.color;
+    for (let i=0;i<14;i++){
+      const px = ((Math.sin(e.seed+i*13.1)+1)/2)*W;
+      const py = t*H*1.1 - (i%5)*20;
+      ctx.beginPath(); ctx.arc(px, py, 3+(i%3), 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawConfetti(e,t){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,1-t*0.9);
+    for (let i=0;i<18;i++){
+      const px = ((Math.sin(e.seed*1.7+i*7.3)+1)/2)*W;
+      const py = t*H*1.2 - 20 + (i%4)*15;
+      ctx.save();
+      ctx.translate(px,py);
+      ctx.rotate(e.seed+i+t*8);
+      ctx.fillStyle = i%2===0 ? e.color : '#ffffff';
+      ctx.fillRect(-4,-2,8,4);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  function drawBubbles(e,t){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,1-t);
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = 2;
+    for (let i=0;i<10;i++){
+      const px = ((Math.sin(e.seed+i*5.2)+1)/2)*W;
+      const py = H - t*H*1.1 - (i%4)*18;
+      ctx.beginPath(); ctx.arc(px, py, 6+(i%3)*3, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawRainbow(e,t){
+    // Multi-color arcs rising from the bottom, like a rainbow appearing — fades in then out.
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - Math.abs(t - 0.5) * 1.5);
+    const cx = W/2, cy = H*0.9, baseR = 40 + t*50, bands = 6;
+    for (let i=0;i<bands;i++){
+      const hue = (i*300/bands + e.seed*30) % 360;
+      ctx.strokeStyle = 'hsl(' + hue.toFixed(0) + ',85%,60%)';
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.arc(cx, cy, baseR + i*11, Math.PI, Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawHearts(e,t){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0,1-t);
+    ctx.font = '22px sans-serif';
+    ctx.fillStyle = '#ffffff'; // fallback tint if the environment can't render color emoji glyphs
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i=0;i<10;i++){
+      const px = ((Math.sin(e.seed+i*9.3)+1)/2)*W;
+      const py = H - t*H*1.1 - (i%4)*22;
+      ctx.fillText('💗', px, py);
+    }
+    ctx.restore();
+  }
+  function drawEffects(){
+    const now = Date.now();
+    effects = effects.filter(e => now - e.start < e.duration);
+    effects.forEach(e => {
+      const t = (now - e.start) / e.duration;
+      if (e.type === 'lightning') drawLightning(e,t);
+      else if (e.type === 'burst') drawBurst(e,t);
+      else if (e.type === 'sparkle') drawSparkleShower(e,t);
+      else if (e.type === 'confetti') drawConfetti(e,t);
+      else if (e.type === 'bubbles') drawBubbles(e,t);
+      else if (e.type === 'rainbow') drawRainbow(e,t);
+      else if (e.type === 'hearts') drawHearts(e,t);
+    });
+  }
+
+  function triggerChip(chip){
+    if (chip.filterIdx >= 0) selectFilter(FILTERS[chip.filterIdx], filterButtons[chip.filterIdx]);
+    if (chip.beatIdx >= 0) startBeat(BEATS[chip.beatIdx], beatButtons[chip.beatIdx]);
+    else stopBeat();
+    stickerBurst(chip.stickers);
+    spawnEffect(chip.effect, chip.color);
+    chipMessage = chip.label + ' detected!';
+    chipMessageUntil = Date.now() + 1800;
+  }
+
+  setInterval(() => {
+    if (!scannerOn || !hasCamera) return;
+    const avg = sampleChipZone();
+    if (!avg){ holdColor = null; holdCount = 0; return; }
+    const cls = classifyColor(avg.r, avg.g, avg.b);
+    if (cls && cls === holdColor){
+      holdCount++;
+    } else {
+      holdColor = cls;
+      holdCount = cls ? 1 : 0;
+    }
+    if (holdCount === HOLD_THRESHOLD){
+      const chip = CHIPS.find(c => c.id === holdColor);
+      if (chip) triggerChip(chip);
+    }
+  }, 120);
+
+  // ---------- Draw loop ----------
+  let hueShift = 0;
+  function drawPlaceholder(){
+    hueShift = (hueShift + 0.4) % 360;
+    const grad = ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0, 'hsl('+hueShift+',60%,25%)');
+    grad.addColorStop(1, 'hsl('+((hueShift+80)%360)+',60%,15%)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+  }
+  function draw(){
+    try {
+      renderFrame();
+      camErrorCount = 0;
+    } catch (e){
+      camErrorCount++;
+      if (camErrorCount === 1 || camErrorCount % 60 === 0){
+        console.error('Beat Video Maker: render frame error', e);
+      }
+      if (camErrorCount === 30 && hasCamera){
+        camOverlay.style.display = 'flex';
+        camOverlay.classList.add('active');
+        camText.textContent = 'The camera feed keeps erroring out mid-frame. Try re-enabling it or reloading the page.';
+        camText.classList.add('err');
+      }
+    }
+    requestAnimationFrame(draw); // always keep the loop alive, even after an error
+  }
+  let camErrorCount = 0;
+  function renderFrame(){
+    ctx.filter = currentFilter.apply || 'none';
+    if (hasCamera && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0){
+      ctx.save();
+      ctx.translate(W,0); ctx.scale(-1,1); // mirror like a selfie cam
+      ctx.drawImage(video, 0, 0, W, H);
+      ctx.restore();
+    } else {
+      drawPlaceholder();
+    }
+    ctx.filter = 'none';
+
+    stickers.forEach(s => {
+      let scale = 1;
+      if (currentBeat && !beatPaused && currentStepMs){
+        const elapsed = Date.now() - lastTickTime;
+        const frac = Math.min(elapsed / currentStepMs, 1);
+        scale = 1 + 0.18 * Math.max(0, 1 - frac*2); // quick pop right after each tick — a cheap stand-in for "dancing" in time with the music
+      }
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.scale(scale, scale);
+      ctx.font = s.size + 'px sans-serif';
+      ctx.fillStyle = '#ffffff'; // fallback tint if the environment can't render color emoji glyphs
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.emoji, 0, 0);
+      ctx.restore();
+    });
+
+    drawEffects();
+
+    if (hasCamera && scannerOn){
+      const progress = Math.min(holdCount / HOLD_THRESHOLD, 1);
+      const ringColor = holdColor ? (CHIPS.find(c=>c.id===holdColor)||{}).color : 'rgba(255,255,255,0.5)';
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.arc(zoneX, zoneY, zoneR, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      if (progress > 0){
+        ctx.strokeStyle = ringColor || '#fff';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(zoneX, zoneY, zoneR, -Math.PI/2, -Math.PI/2 + progress*Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('show chip', zoneX, zoneY + zoneR + 14);
+      ctx.restore();
+    }
+
+    if (chipMessage && Date.now() < chipMessageUntil){
+      ctx.save();
+      ctx.font = "bold 18px 'Baloo 2', sans-serif";
+      ctx.textAlign = 'center';
+      const textW = ctx.measureText(chipMessage).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(W/2 - textW/2 - 14, 14, textW + 28, 32);
+      ctx.fillStyle = '#ffc629';
+      ctx.fillText(chipMessage, W/2, 36);
+      ctx.restore();
+    }
+  }
+  requestAnimationFrame(draw);
+
+  // ---------- Recording ----------
+  const RECORD_SECONDS = 15;
+  const recBtn = document.getElementById('recBtn');
+  const recLabel = document.getElementById('recLabel');
+  const timerEl = document.getElementById('timer');
+  const resultBox = document.getElementById('result');
+  const playback = document.getElementById('playback');
+  const dlBtn = document.getElementById('dlBtn');
+
+  let mediaRecorder = null, chunks = [], countdownTimer = null, recording = false;
+
+  function pickMimeType(){
+    const options = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    for (const o of options){ if (window.MediaRecorder && MediaRecorder.isTypeSupported(o)) return o; }
+    return '';
+  }
+
+  function startRecording(){
+    ensureAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const canvasStream = canvas.captureStream(30);
+    const combined = new MediaStream([
+      ...canvasStream.getVideoTracks(),
+      ...destNode.stream.getAudioTracks()
+    ]);
+    chunks = [];
+    const mimeType = pickMimeType();
+    mediaRecorder = new MediaRecorder(combined, mimeType ? { mimeType } : undefined);
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      playback.src = url;
+      dlBtn.href = url;
+      resultBox.classList.add('show');
+    };
+    mediaRecorder.start();
+    recording = true;
+    recBtn.classList.add('recording');
+    recLabel.textContent = 'Stop';
+
+    let remaining = RECORD_SECONDS;
+    timerEl.textContent = '0:' + String(remaining).padStart(2,'0');
+    countdownTimer = setInterval(() => {
+      remaining--;
+      timerEl.textContent = '0:' + String(Math.max(remaining,0)).padStart(2,'0');
+      if (remaining <= 0) stopRecording();
+    }, 1000);
+  }
+
+  function stopRecording(){
+    if (!recording) return;
+    recording = false;
+    clearInterval(countdownTimer);
+    timerEl.textContent = '0:' + String(RECORD_SECONDS).padStart(2,'0');
+    recBtn.classList.remove('recording');
+    recLabel.textContent = 'Record';
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  }
+
+  recBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
+  timerEl.textContent = '0:' + String(RECORD_SECONDS).padStart(2,'0');
+})();
+</script>
+</body>
+</html>
