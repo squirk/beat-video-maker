@@ -256,9 +256,14 @@ button:focus-visible, .tab:focus-visible{
   line-height:1;
 }
 .sticker-btn:hover{background:var(--brick-blue);}
-.filter-list, .beat-list, .chip-list{
+.filter-list, .beat-list{
   display:flex;
   flex-direction:column;
+  gap:8px;
+}
+.chip-list{
+  display:grid;
+  grid-template-columns:1fr;
   gap:8px;
 }
 .opt-btn{
@@ -286,14 +291,17 @@ button:focus-visible, .tab:focus-visible{
 }
 .chip-row{
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:10px;
+  gap:4px;
+  text-align:center;
   background:var(--panel-hi);
   border-radius:10px;
-  padding:8px 10px;
-  font-size:12.5px;
+  padding:10px 6px;
+  font-size:12px;
 }
-.chip-row .swatch{width:16px;height:16px;border-radius:5px;flex-shrink:0;}
+.chip-row .swatch{width:20px;height:20px;border-radius:6px;flex-shrink:0;}
+.chip-row .chip-effect{font-size:15px;}
 .result{
   display:none;
   flex-direction:column;
@@ -318,7 +326,7 @@ button:focus-visible, .tab:focus-visible{
 }
 @media (min-width:721px){
   .app{
-    grid-template-columns:auto 280px;
+    grid-template-columns:auto 320px;
     grid-template-areas:
       "stage chips"
       "content content";
@@ -329,6 +337,7 @@ button:focus-visible, .tab:focus-visible{
   .panel-block{ display:block !important; }
   .panels-grid{ grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); }
   #panel-chips{ grid-area:chips; max-width:none; width:100%; }
+  .chip-list{ grid-template-columns:repeat(2,1fr); }
 }
 </style>
 </head>
@@ -754,8 +763,10 @@ button:focus-visible, .tab:focus-visible{
     const row = document.createElement('div');
     row.className = 'chip-row';
     const beatName = c.beatIdx >= 0 ? BEATS[c.beatIdx].label : 'Silence';
+    row.title = FILTERS[c.filterIdx].label + ' + ' + beatName;
     row.innerHTML = '<span class="swatch" style="background:'+c.color+'"></span>' +
-      '<span>' + c.label + ' → ' + FILTERS[c.filterIdx].label + ' + ' + beatName + ' ' + EFFECT_ICONS[c.effect] + '</span>';
+      '<span>' + c.label + '</span>' +
+      '<span class="chip-effect">' + EFFECT_ICONS[c.effect] + '</span>';
     chipList.appendChild(row);
   });
 
