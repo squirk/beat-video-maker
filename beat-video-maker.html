@@ -62,14 +62,19 @@ h1{
 }
 .iframe-note.show{display:block;}
 .app{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-areas:
+    "stage"
+    "tabs"
+    "content";
+  justify-items:center;
   gap:18px;
   width:100%;
   max-width:1080px;
 }
 .stage-col{
+  grid-area:stage;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -189,13 +194,16 @@ button:focus-visible, .tab:focus-visible{
 .scan-btn.on{background:var(--brick-green);color:#0c2318;}
 .clear-btn.on{background:var(--brick-yellow);color:#1a1a1a;}
 .panels-wrap{
+  grid-area:content;
   width:100%;
   max-width:520px;
 }
 .tabs{
+  grid-area:tabs;
   display:flex;
   gap:6px;
-  margin-bottom:12px;
+  width:100%;
+  max-width:520px;
 }
 .tab{
   flex:1;
@@ -223,6 +231,11 @@ button:focus-visible, .tab:focus-visible{
   display:none;
 }
 .panel-block.active-panel{display:block;}
+#panel-chips{
+  grid-area:content; /* on mobile it shares the tab-content slot with panels-wrap */
+  width:100%;
+  max-width:520px;
+}
 .panel-heading{
   font-family:'Baloo 2',sans-serif;
   font-weight:700;
@@ -304,10 +317,18 @@ button:focus-visible, .tab:focus-visible{
   box-shadow:0 4px 0 #0f7a3f;
 }
 @media (min-width:721px){
-  .panels-wrap{ max-width:1080px; }
+  .app{
+    grid-template-columns:auto 280px;
+    grid-template-areas:
+      "stage chips"
+      "content content";
+    align-items:start;
+  }
+  .panels-wrap{ max-width:none; }
   .tabs{ display:none; }
   .panel-block{ display:block !important; }
   .panels-grid{ grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); }
+  #panel-chips{ grid-area:chips; max-width:none; width:100%; }
 }
 </style>
 </head>
@@ -344,14 +365,14 @@ button:focus-visible, .tab:focus-visible{
     </div>
   </div>
 
-  <div class="panels-wrap">
-    <div class="tabs">
-      <button class="tab active" data-tab="stickers">Stickers</button>
-      <button class="tab" data-tab="filters">Filters</button>
-      <button class="tab" data-tab="beats">Beats</button>
-      <button class="tab" data-tab="chips">Chips</button>
-    </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="stickers">Stickers</button>
+    <button class="tab" data-tab="filters">Filters</button>
+    <button class="tab" data-tab="beats">Beats</button>
+    <button class="tab" data-tab="chips">Chips</button>
+  </div>
 
+  <div class="panels-wrap">
     <div class="panels-grid">
       <div class="panel-block active-panel" id="panel-stickers">
         <h3 class="panel-heading">Stickers</h3>
@@ -369,13 +390,13 @@ button:focus-visible, .tab:focus-visible{
         <div class="beat-list" id="beatList"></div>
         <div class="hint">Beats play live and get baked into your recording.</div>
       </div>
-
-      <div class="panel-block" id="panel-chips">
-        <h3 class="panel-heading">Chips</h3>
-        <div class="chip-list" id="chipList"></div>
-        <div class="hint">10 colors, 10 reactions — including black and white now. Hold a solid-colored object (a LEGO brick works well) inside the circle at the bottom of the stage and keep it steady for under a second.</div>
-      </div>
     </div>
+  </div>
+
+  <div class="panel-block" id="panel-chips">
+    <h3 class="panel-heading">Chips</h3>
+    <div class="chip-list" id="chipList"></div>
+    <div class="hint">10 colors, 10 reactions — including black and white now. Hold a solid-colored object (a LEGO brick works well) inside the circle at the bottom of the stage and keep it steady for under a second.</div>
   </div>
 </div>
 
@@ -472,12 +493,6 @@ button:focus-visible, .tab:focus-visible{
       x: x !== undefined ? x : W/2 + (Math.random()*60-30),
       y: y !== undefined ? y : H/2 + (Math.random()*60-30),
       size: 56
-    });
-  }
-  function stickerBurst(emojis){
-    emojis.forEach((e,i) => {
-      const angle = (i/emojis.length) * Math.PI*2;
-      addSticker(e, W/2 + Math.cos(angle)*90, H/2 - 30 + Math.sin(angle)*60);
     });
   }
   document.getElementById('clearBtn').addEventListener('click', () => { stickers = []; });
@@ -929,7 +944,6 @@ button:focus-visible, .tab:focus-visible{
     if (chip.filterIdx >= 0) selectFilter(FILTERS[chip.filterIdx], filterButtons[chip.filterIdx]);
     if (chip.beatIdx >= 0) startBeat(BEATS[chip.beatIdx], beatButtons[chip.beatIdx]);
     else stopBeat();
-    stickerBurst(chip.stickers);
     spawnEffect(chip.effect, chip.color);
     chipMessage = chip.label + ' detected!';
     chipMessageUntil = Date.now() + 1800;
