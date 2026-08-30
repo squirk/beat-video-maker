@@ -63,9 +63,9 @@ h1{
 .iframe-note.show{display:block;}
 .app{
   display:flex;
+  flex-direction:column;
+  align-items:center;
   gap:18px;
-  flex-wrap:wrap;
-  justify-content:center;
   width:100%;
   max-width:1080px;
 }
@@ -188,19 +188,14 @@ button:focus-visible, .tab:focus-visible{
 }
 .scan-btn.on{background:var(--brick-green);color:#0c2318;}
 .clear-btn.on{background:var(--brick-yellow);color:#1a1a1a;}
-.side{
-  width:290px;
-  background:var(--panel);
-  border-radius:16px;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  max-width:100%;
+.panels-wrap{
+  width:100%;
+  max-width:520px;
 }
 .tabs{
   display:flex;
   gap:6px;
+  margin-bottom:12px;
 }
 .tab{
   flex:1;
@@ -215,7 +210,26 @@ button:focus-visible, .tab:focus-visible{
   background:var(--brick-yellow);
   color:#1a1a1a;
 }
-.panel-body{min-height:210px;}
+.panels-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.panel-block{
+  background:var(--panel);
+  border-radius:16px;
+  padding:14px;
+  min-height:180px;
+  display:none;
+}
+.panel-block.active-panel{display:block;}
+.panel-heading{
+  font-family:'Baloo 2',sans-serif;
+  font-weight:700;
+  font-size:14px;
+  color:var(--brick-yellow);
+  margin:0 0 10px;
+}
 .grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -289,8 +303,11 @@ button:focus-visible, .tab:focus-visible{
   color:#0c2318;
   box-shadow:0 4px 0 #0f7a3f;
 }
-@media (max-width:720px){
-  .side{width:100%;}
+@media (min-width:721px){
+  .panels-wrap{ max-width:1080px; }
+  .tabs{ display:none; }
+  .panel-block{ display:block !important; }
+  .panels-grid{ grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); }
 }
 </style>
 </head>
@@ -327,7 +344,7 @@ button:focus-visible, .tab:focus-visible{
     </div>
   </div>
 
-  <div class="side">
+  <div class="panels-wrap">
     <div class="tabs">
       <button class="tab active" data-tab="stickers">Stickers</button>
       <button class="tab" data-tab="filters">Filters</button>
@@ -335,22 +352,26 @@ button:focus-visible, .tab:focus-visible{
       <button class="tab" data-tab="chips">Chips</button>
     </div>
 
-    <div class="panel-body">
-      <div class="tab-panel" id="panel-stickers">
+    <div class="panels-grid">
+      <div class="panel-block active-panel" id="panel-stickers">
+        <h3 class="panel-heading">Stickers</h3>
         <div class="grid" id="stickerGrid"></div>
         <div class="hint">Tap a sticker to drop it on the stage. Drag to move it, double-tap to remove it.</div>
       </div>
 
-      <div class="tab-panel" id="panel-filters" style="display:none">
+      <div class="panel-block" id="panel-filters">
+        <h3 class="panel-heading">Filters</h3>
         <div class="filter-list" id="filterList"></div>
       </div>
 
-      <div class="tab-panel" id="panel-beats" style="display:none">
+      <div class="panel-block" id="panel-beats">
+        <h3 class="panel-heading">Beats</h3>
         <div class="beat-list" id="beatList"></div>
         <div class="hint">Beats play live and get baked into your recording.</div>
       </div>
 
-      <div class="tab-panel" id="panel-chips" style="display:none">
+      <div class="panel-block" id="panel-chips">
+        <h3 class="panel-heading">Chips</h3>
         <div class="chip-list" id="chipList"></div>
         <div class="hint">10 colors, 10 reactions — including black and white now. Hold a solid-colored object (a LEGO brick works well) inside the circle at the bottom of the stage and keep it steady for under a second.</div>
       </div>
@@ -692,7 +713,7 @@ button:focus-visible, .tab:focus-visible{
   tabs.forEach(t => t.addEventListener('click', () => {
     tabs.forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    Object.keys(panels).forEach(k => panels[k].style.display = (k===t.dataset.tab) ? 'block' : 'none');
+    Object.keys(panels).forEach(k => panels[k].classList.toggle('active-panel', k===t.dataset.tab));
   }));
 
   // ---------- Music Chips (color-marker scanner) ----------
